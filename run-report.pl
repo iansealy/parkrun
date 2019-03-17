@@ -60,7 +60,7 @@ else {
     my $te = HTML::TableExtract->new( automap => 0 );
     $te->parse( $response->{content} );
 
-    my $num_runners = scalar @{ $te->rows };
+    my $num_runners = scalar @{ $te->rows } - 1;
     my $run         = ordinate($id);
 
     my $num_first =
