@@ -21,6 +21,7 @@ use Lingua::EN::Numbers::Ordinate;
 Readonly my $BASE_URL    => 'http://www.parkrun.org.uk/pinehill-juniors/';
 Readonly my $HISTORY_URL => $BASE_URL . 'results/eventhistory/';
 Readonly my $RESULTS_URL => $BASE_URL . 'results/weeklyresults/?runSeqNumber=';
+Readonly my $LATEST_URL  => $BASE_URL . 'results/latestresults/';
 Readonly my $NAME_COL    => 1;
 Readonly my $TIME_COL    => 2;
 Readonly my $AGE_CAT_COL => 3;
@@ -33,21 +34,25 @@ Readonly my $RUNS_COL       => 9;
 my $id = scalar param('id') || q{};
 $id =~ s/\D+//xmsg;
 
+# Get latest results?
+my $latest = defined scalar param('latest') ? 1 : 0;
+
 # Get URL
-my $url      = $id ? $RESULTS_URL . $id : $HISTORY_URL;
+my $url      = $id ? $RESULTS_URL . $id : $latest ? $LATEST_URL : $HISTORY_URL;
 my $response = HTTP::Tiny->new->get($url);
 confess $response->{status} . q{ } . $response->{reason}
   if !$response->{success};
 
 my $output = q{};
 
-if ( !$id ) {
+if ( !$id && !$latest ) {
 
     # List all runs
     my $te = HTML::TableExtract->new( headers => [qw(Run Date)] );
     $te->parse( $response->{content} );
     my $script_url = $ENV{REQUEST_URI} || q{};
     $output .= "  <ul>\n";
+    $output .= qq{    <li><a href="$script_url?latest=">Latest run</a></li>\n};
     foreach my $row ( $te->rows ) {
         my ( $run, $date ) = @{$row};
         $output .=
@@ -61,7 +66,7 @@ else {
     $te->parse( $response->{content} );
 
     my $num_runners = scalar @{ $te->rows } - 1;
-    my $run         = ordinate($id);
+    my $run         = $id ? ordinate($id) : 'latest';
 
     my $num_first =
       scalar
