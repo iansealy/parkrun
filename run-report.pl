@@ -207,8 +207,11 @@ sub wristbands {
 
     my $children = q{};
     foreach my $row (@rows) {
-        my ($runs) = $row->[$NAME_COL] =~ m/(\d+) \s+ junior parkruns/xms;
-        if ( $runs == $num ) {
+        my $runs = $row->[$NAME_COL];
+        $runs =~ s/\s+ junior \s parkruns.*//xms;
+        $runs =~ s/.*>//xms;
+        $runs =~ s/\D//xmsg;
+        if ( $runs && $runs == $num ) {
             my $name = $row->[$NAME_COL];
             $name =~ s{</a>.*}{}xms;
             $name =~ s/.*>//xms;
