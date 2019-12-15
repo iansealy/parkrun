@@ -23,12 +23,9 @@ Readonly my $HISTORY_URL => $BASE_URL . 'results/eventhistory/';
 Readonly my $RESULTS_URL => $BASE_URL . 'results/weeklyresults/?runSeqNumber=';
 Readonly my $LATEST_URL  => $BASE_URL . 'results/latestresults/';
 Readonly my $NAME_COL    => 1;
-Readonly my $TIME_COL    => 2;
-Readonly my $AGE_CAT_COL => 3;
-Readonly my $GENDER_COL  => 5;
-Readonly my $GENDER_POS_COL => 6;
-Readonly my $NOTES_COL      => 8;
-Readonly my $RUNS_COL       => 9;
+Readonly my $GENDER_COL  => 2;
+Readonly my $AGE_COL     => 3;
+Readonly my $TIME_COL    => 5;
 
 # Get run number (if present)
 my $id = scalar param('id') || q{};
@@ -62,7 +59,7 @@ if ( !$id && !$latest ) {
 }
 else {
     # Show skeleton for chosen run
-    my $te = HTML::TableExtract->new( automap => 0 );
+    my $te = HTML::TableExtract->new( automap => 0, keep_html => 1 );
     $te->parse( $response->{content} );
 
     my $num_runners = scalar @{ $te->rows } - 1;
@@ -70,7 +67,7 @@ else {
 
     my $num_first =
       scalar
-      grep { defined $_->[$NOTES_COL] && $_->[$NOTES_COL] eq 'First Timer!' }
+      grep { defined $_->[$TIME_COL] && $_->[$TIME_COL] =~ m/First\sTimer!/xms }
       @{ $te->rows };
     my $first_plural = $num_first == 1 ? q{} : q{s};
     my $first =
@@ -78,7 +75,8 @@ else {
       $num_first, $first_plural;
 
     my $num_pb =
-      scalar grep { defined $_->[$NOTES_COL] && $_->[$NOTES_COL] eq 'New PB!' }
+      scalar
+      grep { defined $_->[$TIME_COL] && $_->[$TIME_COL] =~ m/New\sPB!/xms }
       @{ $te->rows };
     my $pb_plural = $num_pb == 1 ? q{} : q{s};
     my $pb =
@@ -87,22 +85,16 @@ else {
       : sprintf ' to the amazing %d runner%s who achieved PBs, and', $num_pb,
       $pb_plural;
 
-    my @girls = grep {
-             defined $_->[$GENDER_COL]
-          && $_->[$GENDER_COL] eq q{F}
-          && defined $_->[$GENDER_POS_COL]
-          && $_->[$GENDER_POS_COL] <= 3    ## no critic (ProhibitMagicNumbers)
-    } @{ $te->rows };
+    my @girls =
+      grep { defined $_->[$GENDER_COL] && $_->[$GENDER_COL] =~ m/Female/xms }
+      @{ $te->rows };
     my $girls =
         child( $girls[0] ) . q{, }
       . child( $girls[1] ) . ' and '
       . child( $girls[2] );
-    my @boys = grep {
-             defined $_->[$GENDER_COL]
-          && $_->[$GENDER_COL] eq q{M}
-          && defined $_->[$GENDER_POS_COL]
-          && $_->[$GENDER_POS_COL] <= 3    ## no critic (ProhibitMagicNumbers)
-    } @{ $te->rows };
+    my @boys =
+      grep { defined $_->[$GENDER_COL] && $_->[$GENDER_COL] =~ m/Male/xms }
+      @{ $te->rows };
     my $boys =
         child( $boys[0] ) . q{, }
       . child( $boys[1] ) . ' and '
@@ -192,7 +184,19 @@ EOF
 
 sub child {
     my ($arg_ref) = @_;
-    my ( undef, $name, $time, $age_cat ) = @{$arg_ref};
+    my (@cols)    = @{$arg_ref};
+
+    my $name = $cols[$NAME_COL];
+    $name =~ s{</a>.*}{}xms;
+    $name =~ s/.*>//xms;
+
+    my $age_cat = $cols[$AGE_COL];
+    $age_cat =~ s{</a>.*}{}xms;
+    $age_cat =~ s/.*>//xms;
+
+    my $time = $cols[$TIME_COL];
+    $time =~ s{</div>.*}{}xms;
+    $time =~ s/.*>//xms;
     $time =~ s/\A 0//xms;
 
     return "$name ($age_cat) in a time of $time";
@@ -201,12 +205,15 @@ sub child {
 sub wristbands {
     my ( $num, @rows ) = @_;
 
-    my @children =
-      grep { defined $_->[$RUNS_COL] && $_->[$RUNS_COL] == $num } @rows;
-
     my $children = q{};
-    foreach my $child (@children) {
-        $children .= '    <li>' . $child->[$NAME_COL] . "</li>\n";
+    foreach my $row (@rows) {
+        my ($runs) = $row->[$NAME_COL] =~ m/(\d+) \s+ junior parkruns/xms;
+        if ( $runs == $num ) {
+            my $name = $row->[$NAME_COL];
+            $name =~ s{</a>.*}{}xms;
+            $name =~ s/.*>//xms;
+            $children .= '    <li>' . $name . "</li>\n";
+        }
     }
 
     return $children;
