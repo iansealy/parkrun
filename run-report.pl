@@ -45,13 +45,14 @@ my $output = q{};
 if ( !$id && !$latest ) {
 
     # List all runs
-    my $te = HTML::TableExtract->new( headers => [qw(Run Date)] );
+    my $te = HTML::TableExtract->new( automap => 0, keep_html => 0 );
     $te->parse( $response->{content} );
     my $script_url = $ENV{REQUEST_URI} || q{};
     $output .= "  <ul>\n";
     $output .= qq{    <li><a href="$script_url?latest=">Latest run</a></li>\n};
     foreach my $row ( $te->rows ) {
         my ( $run, $date ) = @{$row};
+        $date =~ s{\A (\d{2}/\d{2}/\d{4}) .*}{$1}xms;
         $output .=
           qq{    <li><a href="$script_url?id=$run">Run $run ($date)</a></li>\n};
     }
