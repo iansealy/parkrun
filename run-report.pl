@@ -52,6 +52,7 @@ if ( !$id && !$latest ) {
     $output .= qq{    <li><a href="$script_url?latest=">Latest run</a></li>\n};
     foreach my $row ( $te->rows ) {
         my ( $run, $date ) = @{$row};
+        next if $run !~ m/\A \d+ \z/xms;
         $date =~ s{\A (\d{2}/\d{2}/\d{4}) .*}{$1}xms;
         $output .=
           qq{    <li><a href="$script_url?id=$run">Run $run ($date)</a></li>\n};
