@@ -135,6 +135,28 @@ $ultra_marathon  </ul>
 EOF
     }
 
+    ## no critic (ProhibitMagicNumbers)
+    my $wristbands100 = wristbands( 100, @{ $te->rows } );
+    ## use critic
+    if ($wristbands100) {
+        $wristbands100 = <<"EOF";
+  <p>The following children are now due a 100 junior parkruns wristband:</p>
+  <ul>
+$wristbands100  </ul>
+EOF
+    }
+
+    ## no critic (ProhibitMagicNumbers)
+    my $wristbands250 = wristbands( 250, @{ $te->rows } );
+    ## use critic
+    if ($wristbands250) {
+        $wristbands250 = <<"EOF";
+  <p>The following children are now due a 250 junior parkruns wristband:</p>
+  <ul>
+$wristbands250  </ul>
+EOF
+    }
+
     $output .= <<"EOF";
   <p>
     $num_runners runners took part in the $run Pinehill junior parkrun.
@@ -164,10 +186,10 @@ EOF
     please can you, when they return, inform the Run Director, before the
     announcements start, that your child is due a band. Wristbands are given
     out the week after your child's 11th run (Half Marathon), 21st run
-    (Marathon) and 50th run (Ultra-Marathon).
+    (Marathon), 50th run (Ultra-Marathon), 100th run and 250th run.
   </p>
   <hr/>
-$half_marathon$marathon$ultra_marathon
+$half_marathon$marathon$ultra_marathon$wristbands100$wristbands250
 EOF
 }
 
